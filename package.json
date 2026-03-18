@@ -8,6 +8,7 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "assignment:submit:check": "tsx src/cli/assignment-submit.ts check",
     "auth": "tsx src/cli/auth.ts",
     "auth:forget": "tsx src/cli/auth.ts forget",
     "auth:login": "tsx src/cli/auth.ts login",

@@ -1,5 +1,6 @@
 export * from "./auth-heuristics.js";
 export * from "./activity-list.js";
+export * from "./assignment-submit.js";
 export * from "./attachment-downloads.js";
 export * from "./assignments.js";
 export * from "./attachments.js";

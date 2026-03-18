@@ -175,6 +175,59 @@ export interface AssignmentDetailResult {
   submission?: AssignmentSubmissionInfo;
 }
 
+export interface AssignmentSubmitPopupSpec {
+  submitPopupUrl: string;
+  submitButtonLabel?: string;
+  requiresTextInput: boolean;
+  textFieldName?: string;
+  hasFilePicker: boolean;
+  uploadUrl?: string;
+  uploadPath?: string;
+  uploadPfStFlag?: string;
+  submitUrl?: string;
+}
+
+export interface AssignmentSubmitDraftFileCheck {
+  path: string;
+  fileName: string;
+  exists: boolean;
+  sizeBytes?: number;
+  withinMaxFileSize?: boolean;
+  blockingReason?: string;
+}
+
+export interface AssignmentSubmitCheckResult {
+  kjkey: string;
+  rtSeq: number;
+  courseTitle?: string;
+  title: string;
+  submissionFormat?: string;
+  dueAt?: string;
+  summaryStatusLabel?: string;
+  summaryStatusText?: string;
+  alreadySubmitted: boolean;
+  existingSubmissionStatus?: string;
+  hasSubmitButton: boolean;
+  submitButtonLabel?: string;
+  submitPopupUrl?: string;
+  requiresTextInput: boolean;
+  textFieldName?: string;
+  hasFilePicker: boolean;
+  uploadUrl?: string;
+  uploadPath?: string;
+  uploadPfStFlag?: string;
+  submitUrl?: string;
+  uploadLimitMessage?: string;
+  maxFileSizeLabel?: string;
+  maxFileSizeBytes?: number;
+  providedTextLength: number;
+  providedTextSatisfiesRequirement: boolean;
+  localFiles: AssignmentSubmitDraftFileCheck[];
+  canProceed: boolean;
+  blockingReasons: string[];
+  warnings: string[];
+}
+
 export interface ActivityQnaTarget {
   menuId: string;
   articleId: number;

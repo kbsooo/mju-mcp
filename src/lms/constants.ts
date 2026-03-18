@@ -15,6 +15,10 @@ export const STUDENT_NOTICE_VIEW_URL =
   `${LMS_BASE}/ilos/cls/st/notice/notice_view_pop.acl`;
 export const STUDENT_ACTIVITY_LIST_URL =
   `${LMS_BASE}/ilos/cls/st/activity/activity_list.acl`;
+export const STUDENT_REPORT_INSERT_POP_URL =
+  `${LMS_BASE}/ilos/cls/st/report/report_insert_pop.acl`;
+export const STUDENT_REPORT_INSERT_URL =
+  `${LMS_BASE}/ilos/cls/st/report/report_insert.acl`;
 export const STUDENT_REPORT_VIEW_URL =
   `${LMS_BASE}/ilos/cls/st/report/report_view_form.acl`;
 export const STUDENT_MATERIAL_VIEW_URL =
@@ -24,3 +28,10 @@ export const STUDENT_ONLINE_VIEW_URL =
 export const STUDENT_ONLINE_LEARNING_FORM_URL =
   `${LMS_BASE}/ilos/cls/st/online/online_learning_form.acl`;
 export const FILE_LIST_URL = `${LMS_BASE}/ilos/co/efile_list.acl`;
+export const FILE_LIST2_URL = `${LMS_BASE}/ilos/co/efile_list2.acl`;
+export const FILE_UPLOAD_MULTIPLE_URL =
+  `${LMS_BASE}/ilos/co/efile_upload_multiple2.acl`;
+export const FILE_UPLOAD_LIMIT_MESSAGE_URL =
+  `${LMS_BASE}/ilos/co/efile_limit_view.acl`;
+export const FILE_UPLOAD_LIMIT_SIZE_URL =
+  `${LMS_BASE}/ilos/co/file_lecture_limit_size.acl`;
