@@ -59,6 +59,7 @@ export interface AttachmentRequestParams {
   kjkey: string;
   pfStFlag: string;
   contentSeq: string;
+  turnitinSeq?: string;
 }
 
 export interface LmsAttachment {
@@ -111,6 +112,49 @@ export interface NoticeDetailResult {
   bodyText: string;
   contentSeq?: string;
   attachments: LmsAttachment[];
+}
+
+export interface AssignmentSummary {
+  rtSeq: number;
+  title: string;
+  week?: number;
+  weekLabel?: string;
+  statusLabel?: string;
+  statusText?: string;
+  isSubmitted: boolean;
+}
+
+export interface AssignmentListResult {
+  kjkey: string;
+  courseTitle?: string;
+  week?: number;
+  assignments: AssignmentSummary[];
+}
+
+export interface AssignmentSubmissionInfo {
+  status?: string;
+  submittedAt?: string;
+  text?: string;
+  contentSeq?: string;
+  attachments: LmsAttachment[];
+}
+
+export interface AssignmentDetailResult {
+  kjkey: string;
+  courseTitle?: string;
+  rtSeq: number;
+  title: string;
+  submissionMethod?: string;
+  submissionFormat?: string;
+  openAt?: string;
+  dueAt?: string;
+  points?: string;
+  scoreVisibility?: string;
+  bodyHtml: string;
+  bodyText: string;
+  contentSeq?: string;
+  attachments: LmsAttachment[];
+  submission?: AssignmentSubmissionInfo;
 }
 
 export interface LoginSnapshotResult {

@@ -96,6 +96,7 @@ export async function fetchAttachments(
     ky: params.kjkey,
     pf_st_flag: params.pfStFlag,
     CONTENT_SEQ: params.contentSeq,
+    ...(params.turnitinSeq ? { TURNITIN_SEQ: params.turnitinSeq } : {}),
     encoding: "utf-8"
   });
 

@@ -13,4 +13,8 @@ export const STUDENT_NOTICE_LIST_URL =
   `${LMS_BASE}/ilos/cls/st/notice/notice_list.acl`;
 export const STUDENT_NOTICE_VIEW_URL =
   `${LMS_BASE}/ilos/cls/st/notice/notice_view_pop.acl`;
+export const STUDENT_ACTIVITY_LIST_URL =
+  `${LMS_BASE}/ilos/cls/st/activity/activity_list.acl`;
+export const STUDENT_REPORT_VIEW_URL =
+  `${LMS_BASE}/ilos/cls/st/report/report_view_form.acl`;
 export const FILE_LIST_URL = `${LMS_BASE}/ilos/co/efile_list.acl`;
