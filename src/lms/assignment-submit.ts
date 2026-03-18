@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { load } from "cheerio";
 
+import { looksLikeLoginPage } from "./auth-heuristics.js";
 import { getCourseAssignment, listCourseAssignments } from "./assignments.js";
 import { enterStudentClassroom } from "./classroom.js";
 import {
@@ -15,7 +16,10 @@ import { MjuLmsSsoClient } from "./sso-client.js";
 import type {
   AssignmentSubmitCheckResult,
   AssignmentSubmitDraftFileCheck,
-  AssignmentSubmitPopupSpec
+  AssignmentSubmitPopupSpec,
+  AssignmentSubmitResult,
+  AssignmentUploadedFile,
+  DecodedResponse
 } from "./types.js";
 
 export interface CheckAssignmentSubmissionOptions {
@@ -25,6 +29,23 @@ export interface CheckAssignmentSubmissionOptions {
   rtSeq: number;
   text?: string;
   localFiles?: string[];
+}
+
+export interface SubmitAssignmentOptions extends CheckAssignmentSubmissionOptions {
+  confirm: boolean;
+}
+
+interface AssignmentUploadResponse {
+  isError?: boolean;
+  message?: string;
+  seq1?: string;
+}
+
+interface AssignmentSubmitResponse {
+  isError?: boolean;
+  message?: string;
+  isKjkey?: boolean;
+  chSubjtMessage?: string;
 }
 
 function normalizeText(value: string): string {
@@ -205,7 +226,6 @@ async function fetchUploadLimits(
   const messagePayload = parseLooseJson<{ MESSAGE?: string }>(messageResponse.text);
   const sizePayload = parseLooseJson<{ fileLimitSize?: string }>(sizeResponse.text);
   const maxFileSizeLabel = sizePayload?.fileLimitSize?.trim() || undefined;
-
   const maxFileSizeBytes = maxFileSizeLabel
     ? parseSizeToBytes(maxFileSizeLabel)
     : undefined;
@@ -251,8 +271,7 @@ async function inspectLocalFiles(
       if (maxFileSizeBytes !== undefined) {
         fileCheck.withinMaxFileSize = stats.size <= maxFileSizeBytes;
         if (!fileCheck.withinMaxFileSize) {
-          fileCheck.blockingReason =
-            "서버 최대 첨부 용량을 초과했습니다.";
+          fileCheck.blockingReason = "서버 최대 첨부 용량을 초과했습니다.";
         }
       }
 
@@ -270,12 +289,32 @@ async function inspectLocalFiles(
   return results;
 }
 
-export async function checkAssignmentSubmission(
+function parseJsonResponse<T>(
+  response: DecodedResponse,
+  actionLabel: string
+): T {
+  const payload = parseLooseJson<T>(response.text);
+  if (payload) {
+    return payload;
+  }
+
+  if (looksLikeLoginPage(response)) {
+    throw new Error(`${actionLabel} 도중 로그인 페이지로 이동했습니다. 세션이 만료된 것 같습니다.`);
+  }
+
+  throw new Error(`${actionLabel} 응답을 JSON으로 해석하지 못했습니다.`);
+}
+
+async function collectSubmissionContext(
   client: MjuLmsSsoClient,
   options: CheckAssignmentSubmissionOptions
-): Promise<AssignmentSubmitCheckResult> {
-  const localFilesInput = options.localFiles ?? [];
-
+): Promise<{
+  assignmentDetail: Awaited<ReturnType<typeof getCourseAssignment>>;
+  summary: Awaited<ReturnType<typeof listCourseAssignments>>["assignments"][number] | undefined;
+  submitButton: ReturnType<typeof parseSubmitButton>;
+  popupSpec?: AssignmentSubmitPopupSpec;
+  popupLimits: Awaited<ReturnType<typeof fetchUploadLimits>>;
+}> {
   await client.ensureAuthenticated(options.userId, options.password);
   await enterStudentClassroom(client, options.kjkey);
 
@@ -311,6 +350,23 @@ export async function checkAssignmentSubmission(
     );
     popupLimits = await fetchUploadLimits(client, popupSpec);
   }
+
+  return {
+    assignmentDetail,
+    summary,
+    submitButton,
+    ...(popupSpec ? { popupSpec } : {}),
+    popupLimits
+  };
+}
+
+export async function checkAssignmentSubmission(
+  client: MjuLmsSsoClient,
+  options: CheckAssignmentSubmissionOptions
+): Promise<AssignmentSubmitCheckResult> {
+  const localFilesInput = options.localFiles ?? [];
+  const { assignmentDetail, summary, submitButton, popupSpec, popupLimits } =
+    await collectSubmissionContext(client, options);
 
   const providedTextLength = measureProvidedText(options.text);
   const localFiles = await inspectLocalFiles(
@@ -417,6 +473,171 @@ export async function checkAssignmentSubmission(
     localFiles,
     canProceed: blockingReasons.length === 0,
     blockingReasons,
+    warnings
+  };
+}
+
+async function uploadAssignmentFile(
+  client: MjuLmsSsoClient,
+  checkResult: AssignmentSubmitCheckResult,
+  userId: string,
+  localFile: AssignmentSubmitDraftFileCheck
+): Promise<AssignmentUploadedFile> {
+  if (!localFile.exists || localFile.sizeBytes === undefined) {
+    throw new Error(`${localFile.fileName} 파일을 업로드할 수 없습니다.`);
+  }
+
+  if (!checkResult.uploadUrl || !checkResult.uploadPath || !checkResult.uploadPfStFlag) {
+    throw new Error("파일 업로드에 필요한 서버 파라미터가 부족합니다.");
+  }
+
+  const buffer = await fs.readFile(localFile.path);
+  const formData = new FormData();
+  formData.set("path", checkResult.uploadPath);
+  formData.set("ud", userId);
+  formData.set("ky", checkResult.kjkey);
+  formData.set("returnData", "json");
+  formData.set("pf_st_flag", checkResult.uploadPfStFlag);
+  formData.append("file", new Blob([buffer]), localFile.fileName);
+
+  const uploadResponse = await client.postMultipart(checkResult.uploadUrl, formData);
+  const payload = parseJsonResponse<AssignmentUploadResponse>(
+    uploadResponse,
+    `${localFile.fileName} 파일 업로드`
+  );
+
+  if (payload.isError) {
+    throw new Error(
+      payload.message
+        ? `${localFile.fileName} 파일 업로드 실패: ${payload.message}`
+        : `${localFile.fileName} 파일 업로드 실패`
+    );
+  }
+
+  const fileSeq = payload.seq1?.trim();
+  if (!fileSeq) {
+    throw new Error(`${localFile.fileName} 업로드 응답에서 FILE_SEQ를 찾지 못했습니다.`);
+  }
+
+  return {
+    path: localFile.path,
+    fileName: localFile.fileName,
+    sizeBytes: localFile.sizeBytes,
+    fileSeq
+  };
+}
+
+export async function submitAssignment(
+  client: MjuLmsSsoClient,
+  options: SubmitAssignmentOptions
+): Promise<AssignmentSubmitResult> {
+  if (!options.confirm) {
+    throw new Error("실제 제출을 실행하려면 --confirm 플래그가 필요합니다.");
+  }
+
+  const checkResult = await checkAssignmentSubmission(client, options);
+
+  if (checkResult.alreadySubmitted) {
+    throw new Error(
+      "이미 제출된 과제의 수정 제출은 아직 구현하지 않았습니다. 실제 제출 단계에서는 재제출을 보수적으로 차단합니다."
+    );
+  }
+
+  if (!checkResult.canProceed) {
+    throw new Error(
+      `제출 사전 검증을 통과하지 못했습니다.\n- ${checkResult.blockingReasons.join("\n- ")}`
+    );
+  }
+
+  if (!checkResult.submitUrl) {
+    throw new Error("최종 제출 URL을 확인하지 못했습니다.");
+  }
+
+  if (checkResult.providedTextLength === 0 && checkResult.localFiles.length === 0) {
+    throw new Error("빈 제출은 허용하지 않습니다. 텍스트 또는 첨부파일을 하나 이상 제공해 주세요.");
+  }
+
+  if (!checkResult.hasFilePicker && checkResult.localFiles.length > 0) {
+    throw new Error("이 과제는 현재 파일 첨부 제출 구조를 확인하지 못했습니다.");
+  }
+
+  const uploadedFiles: AssignmentUploadedFile[] = [];
+  for (const localFile of checkResult.localFiles) {
+    uploadedFiles.push(
+      await uploadAssignmentFile(client, checkResult, options.userId, localFile)
+    );
+  }
+
+  const submitResponse = await client.postForm(checkResult.submitUrl, {
+    ud: options.userId,
+    ky: options.kjkey,
+    RT_SEQ: String(options.rtSeq),
+    returnData: "json",
+    JR_TXT: options.text?.trim() ?? "",
+    FILE_SEQS: uploadedFiles.map((file) => file.fileSeq).join(","),
+    start: "",
+    display: "",
+    INPUT_METHOD_FLAG: "",
+    encoding: "utf-8"
+  });
+
+  const payload = parseJsonResponse<AssignmentSubmitResponse>(
+    submitResponse,
+    "과제 최종 제출"
+  );
+
+  if (payload.isError) {
+    throw new Error(
+      payload.message ? `과제 제출 실패: ${payload.message}` : "과제 제출 실패"
+    );
+  }
+
+  if (payload.isKjkey === false) {
+    throw new Error(
+      payload.chSubjtMessage
+        ? `과제 제출 실패: ${payload.chSubjtMessage}`
+        : "과제 제출 후 강의실 상태를 확인하지 못했습니다."
+    );
+  }
+
+  const verifiedDetail = await getCourseAssignment(client, {
+    userId: options.userId,
+    password: options.password,
+    kjkey: options.kjkey,
+    rtSeq: options.rtSeq
+  });
+
+  const warnings = [...checkResult.warnings];
+  const verified = verifiedDetail.submission !== undefined;
+  if (!verified) {
+    warnings.push("제출 요청은 성공으로 보였지만, 제출 후 상세 재조회에서 제출 정보가 바로 보이지 않았습니다.");
+  }
+
+  return {
+    kjkey: options.kjkey,
+    rtSeq: options.rtSeq,
+    title: verifiedDetail.title,
+    ...(verifiedDetail.courseTitle ? { courseTitle: verifiedDetail.courseTitle } : {}),
+    ...(verifiedDetail.submissionFormat
+      ? { submissionFormat: verifiedDetail.submissionFormat }
+      : {}),
+    submittedTextLength: checkResult.providedTextLength,
+    uploadedFiles,
+    submitUrl: checkResult.submitUrl,
+    verified,
+    alreadySubmittedBeforeSubmit: checkResult.alreadySubmitted,
+    ...(verifiedDetail.submission?.status
+      ? { finalSubmissionStatus: verifiedDetail.submission.status }
+      : {}),
+    ...(verifiedDetail.submission?.submittedAt
+      ? { finalSubmittedAt: verifiedDetail.submission.submittedAt }
+      : {}),
+    ...(verifiedDetail.submission?.text
+      ? { finalSubmissionText: verifiedDetail.submission.text }
+      : {}),
+    ...(verifiedDetail.submission
+      ? { finalSubmissionAttachmentCount: verifiedDetail.submission.attachments.length }
+      : {}),
     warnings
   };
 }

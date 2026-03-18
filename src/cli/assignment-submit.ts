@@ -2,7 +2,10 @@ import fs from "node:fs/promises";
 import { parseArgs } from "node:util";
 
 import { resolveLmsRuntimeConfig } from "../config.js";
-import { checkAssignmentSubmission } from "../lms/assignment-submit.js";
+import {
+  checkAssignmentSubmission,
+  submitAssignment
+} from "../lms/assignment-submit.js";
 import { createAppContext } from "../mcp/app-context.js";
 import { requireCredentials } from "../tools/credentials.js";
 
@@ -11,6 +14,7 @@ const USAGE = [
   "  npm run assignment:submit:check -- --kjkey KJKEY --rt-seq 1234567",
   "  npm run assignment:submit:check -- --kjkey KJKEY --rt-seq 1234567 --text \"draft text\"",
   "  npm run assignment:submit:check -- --kjkey KJKEY --rt-seq 1234567 --text-file .\\draft.html --file .\\report.pdf",
+  "  npm run assignment:submit -- --kjkey KJKEY --rt-seq 1234567 --text-file .\\draft.html --file .\\report.pdf --confirm",
   "",
   "Shared flags:",
   "  --app-dir                 Override local app data directory",
@@ -24,14 +28,16 @@ const USAGE = [
   "  --text                    Draft text/html to validate",
   "  --text-file               Local text/html file to validate",
   "  --file                    Local attachment path (repeatable)",
+  "  --confirm                 Required for the actual submit command",
   "  --help                    Show this message"
 ].join("\n");
 
-type CommandName = "check" | "help";
+type CommandName = "check" | "submit" | "help";
 
 function parseCommandName(raw: string | undefined): CommandName {
   switch (raw) {
     case "check":
+    case "submit":
       return raw;
     default:
       return "help";
@@ -72,6 +78,7 @@ async function main(): Promise<void> {
     args: restArgs,
     options: {
       "app-dir": { type: "string" },
+      confirm: { type: "boolean", default: false },
       file: { type: "string", multiple: true },
       help: { type: "boolean", short: "h", default: false },
       kjkey: { type: "string" },
@@ -117,6 +124,23 @@ async function main(): Promise<void> {
             password: credentials.password,
             kjkey,
             rtSeq,
+            ...(draftText ? { text: draftText } : {}),
+            ...(localFiles.length > 0 ? { localFiles } : {})
+          }),
+          null,
+          2
+        )
+      );
+      return;
+    case "submit":
+      console.log(
+        JSON.stringify(
+          await submitAssignment(client, {
+            userId: credentials.userId,
+            password: credentials.password,
+            kjkey,
+            rtSeq,
+            confirm: values.confirm,
             ...(draftText ? { text: draftText } : {}),
             ...(localFiles.length > 0 ? { localFiles } : {})
           }),

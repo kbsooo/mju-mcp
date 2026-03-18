@@ -160,6 +160,17 @@ export class MjuLmsSsoClient {
     return toDecodedResponse(response);
   }
 
+  async postMultipart(
+    url: string | URL,
+    body: FormData
+  ): Promise<DecodedResponse> {
+    const response = await this.http.post(url.toString(), {
+      responseType: "buffer",
+      body
+    });
+    return toDecodedResponse(response);
+  }
+
   async fetchMainPage(): Promise<DecodedResponse> {
     return this.getPage(MAIN_URL);
   }

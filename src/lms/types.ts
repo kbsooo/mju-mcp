@@ -228,6 +228,31 @@ export interface AssignmentSubmitCheckResult {
   warnings: string[];
 }
 
+export interface AssignmentUploadedFile {
+  path: string;
+  fileName: string;
+  sizeBytes: number;
+  fileSeq: string;
+}
+
+export interface AssignmentSubmitResult {
+  kjkey: string;
+  rtSeq: number;
+  title: string;
+  courseTitle?: string;
+  submissionFormat?: string;
+  submittedTextLength: number;
+  uploadedFiles: AssignmentUploadedFile[];
+  submitUrl: string;
+  verified: boolean;
+  alreadySubmittedBeforeSubmit: boolean;
+  finalSubmissionStatus?: string;
+  finalSubmittedAt?: string;
+  finalSubmissionText?: string;
+  finalSubmissionAttachmentCount?: number;
+  warnings: string[];
+}
+
 export interface ActivityQnaTarget {
   menuId: string;
   articleId: number;
