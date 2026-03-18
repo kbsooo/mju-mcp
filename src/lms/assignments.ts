@@ -105,15 +105,21 @@ function extractSubmissionAttachmentRequest(
   html: string,
   fallbackParams: AttachmentRequestParams | undefined
 ): AttachmentRequestParams | undefined {
-  const match = html.match(
-    /content_seq\s*=\s*"([^"]*)"[\s\S]*?url:\s*"\/ilos\/co\/efile_list\.acl"[\s\S]*?ud\s*:\s*"([^"]+)"[\s\S]*?ky\s*:\s*"([^"]+)"[\s\S]*?pf_st_flag\s*:\s*"([^"]+)"[\s\S]*?CONTENT_SEQ\s*:\s*content_seq[\s\S]*?TURNITIN_SEQ\s*:\s*"([^"]*)"/
+  const contentSeqMatches = Array.from(
+    html.matchAll(/content_seq\s*=\s*"([^"]+)"/g)
+  )
+    .map((match) => match[1]?.trim())
+    .filter((value): value is string => Boolean(value));
+  const contentSeq = contentSeqMatches.at(-1);
+
+  const requestMatch = html.match(
+    /url:\s*"\/ilos\/co\/efile_list\.acl"[\s\S]*?ud\s*:\s*"([^"]+)"[\s\S]*?ky\s*:\s*"([^"]+)"[\s\S]*?pf_st_flag\s*:\s*"([^"]+)"[\s\S]*?CONTENT_SEQ\s*:\s*content_seq[\s\S]*?TURNITIN_SEQ\s*:\s*"([^"]*)"/
   );
 
-  const contentSeq = match?.[1]?.trim();
-  const userId = match?.[2]?.trim() || fallbackParams?.userId;
-  const kjkey = match?.[3]?.trim() || fallbackParams?.kjkey;
-  const pfStFlag = match?.[4]?.trim() || fallbackParams?.pfStFlag;
-  const turnitinSeq = match?.[5]?.trim();
+  const userId = requestMatch?.[1]?.trim() || fallbackParams?.userId;
+  const kjkey = requestMatch?.[2]?.trim() || fallbackParams?.kjkey;
+  const pfStFlag = requestMatch?.[3]?.trim() || fallbackParams?.pfStFlag;
+  const turnitinSeq = requestMatch?.[4]?.trim();
 
   if (!contentSeq || !userId || !kjkey || !pfStFlag) {
     return undefined;
