@@ -78,6 +78,12 @@ function normalizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function toAbsoluteUrl(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   if (!trimmed) {
@@ -1017,16 +1023,34 @@ export async function deleteAssignment(
     );
   }
 
-  const verifiedDetail = await getCourseAssignment(client, {
+  let verifiedDetail = await getCourseAssignment(client, {
     userId: options.userId,
     password: options.password,
     kjkey: options.kjkey,
     rtSeq: options.rtSeq
   });
-  const detailPage = await client.getPage(
+  let detailPage = await client.getPage(
     `${STUDENT_REPORT_VIEW_URL}?RT_SEQ=${options.rtSeq}`
   );
-  const submitButton = parseSubmitButton(detailPage.text);
+  let submitButton = parseSubmitButton(detailPage.text);
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (verifiedDetail.submission === undefined && submitButton.hasSubmitButton) {
+      break;
+    }
+
+    await sleep(400);
+    verifiedDetail = await getCourseAssignment(client, {
+      userId: options.userId,
+      password: options.password,
+      kjkey: options.kjkey,
+      rtSeq: options.rtSeq
+    });
+    detailPage = await client.getPage(
+      `${STUDENT_REPORT_VIEW_URL}?RT_SEQ=${options.rtSeq}`
+    );
+    submitButton = parseSubmitButton(detailPage.text);
+  }
 
   const warnings: string[] = [];
   if (verifiedDetail.submission) {

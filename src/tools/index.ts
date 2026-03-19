@@ -1,7 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import type { AppContext } from "../mcp/app-context.js";
+import { registerAssignmentActionTools } from "./assignment-actions.js";
 import { registerAssignmentTools } from "./assignments.js";
+import { registerAttachmentTools } from "./attachments.js";
+import { registerAuthTools } from "./auth.js";
 import { registerCourseTools } from "./courses.js";
 import { registerMaterialTools } from "./materials.js";
 import { registerNoticeTools } from "./notices.js";
@@ -11,7 +14,10 @@ export function registerMjuLmsTools(
   server: McpServer,
   context: AppContext
 ): void {
+  registerAssignmentActionTools(server, context);
   registerAssignmentTools(server, context);
+  registerAttachmentTools(server, context);
+  registerAuthTools(server, context);
   registerCourseTools(server, context);
   registerMaterialTools(server, context);
   registerNoticeTools(server, context);
