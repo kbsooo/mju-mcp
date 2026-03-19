@@ -4,6 +4,8 @@ import { AuthManager } from "../auth/auth-manager.js";
 import type { ResolvedLmsCredentials } from "../auth/types.js";
 import { resolveLmsRuntimeConfig, type LmsRuntimeConfig } from "../config.js";
 import { MjuLmsSsoClient } from "../lms/sso-client.js";
+import { resolveMsiRuntimeConfig, type MsiRuntimeConfig } from "../msi/config.js";
+import { MjuMsiClient } from "../msi/client.js";
 
 export interface LastCourseContext {
   kjkey: string;
@@ -30,8 +32,10 @@ interface SessionState {
 
 export interface AppContext {
   lmsConfig: LmsRuntimeConfig;
+  msiConfig: MsiRuntimeConfig;
   authManager: AuthManager;
   createLmsClient(): MjuLmsSsoClient;
+  createMsiClient(): MjuMsiClient;
   getCredentials(): Promise<ResolvedLmsCredentials>;
   getLastCourseContext(sessionId?: string): LastCourseContext | undefined;
   setLastCourseContext(
@@ -57,7 +61,11 @@ export interface AppContext {
 }
 
 export function createAppContext(
-  lmsConfig: LmsRuntimeConfig = resolveLmsRuntimeConfig()
+  lmsConfig: LmsRuntimeConfig = resolveLmsRuntimeConfig(),
+  msiConfig: MsiRuntimeConfig = resolveMsiRuntimeConfig({
+    appDataDir: lmsConfig.appDataDir,
+    userAgent: lmsConfig.userAgent
+  })
 ): AppContext {
   const authManager = new AuthManager(lmsConfig);
   const sessionStates = new Map<string, SessionState>();
@@ -89,9 +97,13 @@ export function createAppContext(
 
   return {
     lmsConfig,
+    msiConfig,
     authManager,
     createLmsClient() {
       return new MjuLmsSsoClient(lmsConfig);
+    },
+    createMsiClient() {
+      return new MjuMsiClient(msiConfig);
     },
     getCredentials() {
       return authManager.resolveCredentials();

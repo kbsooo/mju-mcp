@@ -8,6 +8,7 @@ import { registerAttachmentTools } from "./attachments.js";
 import { registerAuthTools } from "./auth.js";
 import { registerCourseTools } from "./courses.js";
 import { registerMaterialTools } from "./materials.js";
+import { registerMsiTools } from "./msi.js";
 import { registerNoticeTools } from "./notices.js";
 import { registerOnlineTools } from "./online.js";
 
@@ -22,6 +23,7 @@ export function registerMjuLmsTools(
   registerAuthTools(server, context);
   registerCourseTools(server, context);
   registerMaterialTools(server, context);
+  registerMsiTools(server, context);
   registerNoticeTools(server, context);
   registerOnlineTools(server, context);
 }
