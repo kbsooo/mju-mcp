@@ -119,7 +119,7 @@ npm run login:sso -- --id YOUR_ID --password YOUR_PASSWORD
 대표 저장 항목:
 
 - `state/profile.json`
-- `state/session.json`
+- `state/lms-session.json`
 - `state/msi-session.json`
 - `state/ucheck-session.json`
 - `snapshots/`

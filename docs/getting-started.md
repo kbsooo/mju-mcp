@@ -36,7 +36,7 @@ npm run auth:login -- --id YOUR_ID --password YOUR_PASSWORD
 
 - 아이디: `%LOCALAPPDATA%\\mju-mcp\\state\\profile.json`
 - 비밀번호: Windows Credential Manager
-- LMS 세션: `%LOCALAPPDATA%\\mju-mcp\\state\\session.json`
+- LMS 세션: `%LOCALAPPDATA%\\mju-mcp\\state\\lms-session.json`
 - MSI 세션: `%LOCALAPPDATA%\\mju-mcp\\state\\msi-session.json`
 - UCheck 세션: `%LOCALAPPDATA%\\mju-mcp\\state\\ucheck-session.json`
 

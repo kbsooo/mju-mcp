@@ -19,7 +19,7 @@
 
 기본적으로 세션은 서비스별로 분리됩니다.
 
-- LMS: `state/session.json`
+- LMS: `state/lms-session.json`
 - MSI: `state/msi-session.json`
 - UCheck: `state/ucheck-session.json`
 
