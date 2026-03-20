@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { A2UIProvider, A2UIRenderer, useA2UIActions } from "@a2ui/react";
+import { A2UIProvider, A2UIRenderer, useA2UIActions, defaultTheme } from "@a2ui/react";
 import type { Types } from "@a2ui/react";
-
-const MJU_THEME: Types.Theme = {
-  primaryColor: "#1a56db",   // 명지대 파란색 계열
-  font: "Roboto",
-};
 
 function Renderer({ messages }: { messages: Types.ServerToClientMessage[] }) {
   const { processMessages, getSurfaces } = useA2UIActions();
@@ -33,7 +28,7 @@ export default function A2UIViewer({
   messages: Types.ServerToClientMessage[];
 }) {
   return (
-    <A2UIProvider theme={MJU_THEME}>
+    <A2UIProvider theme={defaultTheme}>
       <Renderer messages={messages} />
     </A2UIProvider>
   );
