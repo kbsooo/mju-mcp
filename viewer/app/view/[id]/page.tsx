@@ -1,14 +1,14 @@
 import { Suspense } from "react";
+import { list } from "@vercel/blob";
 import A2UIViewer from "@/components/A2UIViewer";
 import type { Types } from "@a2ui/react";
 
 async function fetchMessages(id: string): Promise<Types.ServerToClientMessage[]> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-  const res = await fetch(`${base}/api/view/${id}`, {
-    next: { revalidate: 0 },
-  });
+  const { blobs } = await list({ prefix: `views/${id}.json` });
+  if (!blobs[0]) throw new Error("Not found");
 
-  if (!res.ok) throw new Error("View not found");
+  const res = await fetch(blobs[0].url, { next: { revalidate: 0 } });
+  if (!res.ok) throw new Error("Fetch failed");
   return res.json() as Promise<Types.ServerToClientMessage[]>;
 }
 
