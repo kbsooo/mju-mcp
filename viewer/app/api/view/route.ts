@@ -19,13 +19,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json(
+      { error: "BLOB_READ_WRITE_TOKEN is not set" },
+      { status: 500 }
+    );
+  }
+
   const id = randomUUID();
-  const blob = await put(`views/${id}.json`, JSON.stringify(body), {
-    access: "public",
-    contentType: "application/json",
-    // 24시간 후 자동 만료 (Vercel Blob은 TTL 미지원 — 클라이언트에서 expiresAt 체크)
-    addRandomSuffix: false,
-  });
+  let blob: Awaited<ReturnType<typeof put>>;
+  try {
+    blob = await put(`views/${id}.json`, JSON.stringify(body), {
+      access: "public",
+      contentType: "application/json",
+      addRandomSuffix: false,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: "Blob upload failed", detail: String(err) },
+      { status: 500 }
+    );
+  }
 
   const viewerUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/view/${id}`;
 
