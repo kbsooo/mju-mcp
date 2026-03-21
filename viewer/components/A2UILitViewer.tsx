@@ -20,7 +20,7 @@ export default function A2UILitViewer({
 
     async function init() {
       // 순차 import: SSR에서 절대 실행 안 됨 (useEffect는 브라우저 전용)
-      const [{ v0_8 }, , { LitElement, html }, { ContextProvider }, UI, { litTheme }] =
+      const [{ v0_8 }, , { LitElement, html }, { ContextProvider }, UI, { litTheme }, { renderMarkdown }] =
         await Promise.all([
           import("@a2ui/lit"),
           import("@a2ui/lit/ui"),       // 모든 custom element 등록 (side-effect)
@@ -28,6 +28,7 @@ export default function A2UILitViewer({
           import("@lit/context"),
           import("@a2ui/lit/ui"),
           import("@a2ui/react"),
+          import("@a2ui/markdown-it"), // markdown → HTML 변환
         ]);
 
       if (cancelled || !containerRef.current) return;
@@ -47,20 +48,26 @@ export default function A2UILitViewer({
           surface: unknown = null;
           processor: unknown = null;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          _provider: InstanceType<typeof ContextProvider> | null = null;
+          _themeProvider: InstanceType<typeof ContextProvider> | null = null;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          _markdownProvider: InstanceType<typeof ContextProvider> | null = null;
 
           constructor() {
             super();
             // ContextProvider는 connectedCallback 전에 생성해야 context-request를 캐치
-            this._provider = new ContextProvider(this, {
+            this._themeProvider = new ContextProvider(this, {
               context: UI.Context.themeContext,
               initialValue: this._theme,
+            });
+            this._markdownProvider = new ContextProvider(this, {
+              context: UI.Context.markdown,
+              initialValue: renderMarkdown,
             });
           }
 
           set theme(value: Types.Theme | undefined) {
             this._theme = value;
-            this._provider?.setValue(value as never);
+            this._themeProvider?.setValue(value as never);
           }
           get theme() {
             return this._theme;
