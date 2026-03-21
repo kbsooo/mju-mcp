@@ -1,15 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
-import { A2UIProvider, A2UIRenderer, useA2UIActions, defaultTheme } from "@a2ui/react";
+import { useEffect, useState } from "react";
+import {
+  A2UIProvider,
+  A2UIRenderer,
+  useA2UIActions,
+  defaultTheme,
+  initializeDefaultCatalog,
+} from "@a2ui/react";
 import type { Types } from "@a2ui/react";
+
+// 컴포넌트 카탈로그 초기화 (Column, Row, Card, Text 등 등록)
+initializeDefaultCatalog();
 
 function Renderer({ messages }: { messages: Types.ServerToClientMessage[] }) {
   const { processMessages, getSurfaces } = useA2UIActions();
+  const [, forceRender] = useState(0);
 
   useEffect(() => {
     processMessages(messages);
-  }, [messages, processMessages]);
+    // processMessages 후 상태 반영을 위해 리렌더 트리거
+    forceRender((n) => n + 1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const surfaces = getSurfaces();
 
