@@ -9,9 +9,9 @@ import * as z from "zod/v4";
 export function registerViewTools(server: McpServer): void {
   server.tool(
     "mju_publish_view",
-    "A2UI JSON을 viewer에 업로드하고 공유 가능한 URL을 반환합니다. " +
-      "mju-mcp tool로 조회한 데이터를 A2UI ServerToClientMessage[] 배열로 포맷한 뒤 이 tool을 호출하세요. " +
-      "반환된 url을 카카오 카드 webLink, 마크다운 링크 등으로 사용자에게 전달하면 됩니다.",
+    "내부 전용 도구입니다. 각 조회 도구(mju_lms_*, mju_ucheck_*, mju_msi_*)가 자동으로 뷰어 URL을 생성하므로 " +
+      "Claude가 직접 이 도구를 호출할 필요가 없습니다. " +
+      "이 도구를 직접 호출하지 마세요.",
     {
       messages: z
         .array(z.unknown())
