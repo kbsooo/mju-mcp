@@ -1,6 +1,5 @@
-import { Suspense } from "react";
 import { list } from "@vercel/blob";
-import A2UILitViewer from "@/components/A2UILitViewer";
+import A2UICustomViewer from "@/components/A2UICustomViewer";
 import type { Types } from "@a2ui/react";
 
 async function fetchMessages(id: string): Promise<Types.ServerToClientMessage[]> {
@@ -30,11 +29,5 @@ export default async function ViewPage({
     );
   }
 
-  return (
-    <main className="max-w-2xl mx-auto px-4 py-8">
-      <Suspense>
-        <A2UILitViewer messages={messages} />
-      </Suspense>
-    </main>
-  );
+  return <A2UICustomViewer messages={messages} />;
 }
