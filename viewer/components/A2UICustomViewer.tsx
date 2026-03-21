@@ -42,6 +42,8 @@ const STATUS_MAP: Record<string, { fg: string; bg: string; label: string }> = {
   "🟠": { fg: "#c2410c", bg: "#ffedd5", label: "조퇴" },
   "⚪": { fg: "#64748b", bg: "#f1f5f9", label: "휴강" },
   "❓": { fg: "#64748b", bg: "#f1f5f9", label: "미확인" },
+  "🔵": { fg: "#1e40af", bg: "#dbeafe", label: "안읽음" },
+  "📎": { fg: "#7c3aed", bg: "#ede9fe", label: "첨부" },
 };
 
 // "🟢 출석 5  🟡 지각 0  🔴 결석 0  🟠 조퇴 0" → parsed chips
@@ -60,9 +62,9 @@ function parseStats(text: string): StatChip[] | null {
 // "🟢 2026/03/04(수) 출석" → { emoji, date, status }
 type SessionRow = { emoji: string; date: string; status: string };
 function parseSession(text: string): SessionRow | null {
-  const m = text.match(/^([🟢🟡🔴🟠⚪❓])\s+(.+?)\s{2,}(.+)$/u);
+  const m = text.match(/^([🟢🟡🔴🟠⚪❓🔵📎])\s+(.+?)\s{2,}(.+)$/u);
   if (m) return { emoji: m[1], date: m[2].trim(), status: m[3].trim() };
-  const m2 = text.match(/^([🟢🟡🔴🟠⚪❓])\s+(.+)$/u);
+  const m2 = text.match(/^([🟢🟡🔴🟠⚪❓🔵📎])\s+(.+)$/u);
   if (m2) return { emoji: m2[1], date: m2[2].trim(), status: "" };
   return null;
 }

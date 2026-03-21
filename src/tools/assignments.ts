@@ -20,6 +20,8 @@ import {
   resolveCourseReference
 } from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
+import { buildAssignmentListMessages, buildAssignmentDetailMessages } from "../a2ui/builders/assignments.js";
+import { publishView } from "../a2ui/publish.js";
 
 const attachmentSchema = {
   name: z.string(),
@@ -161,7 +163,8 @@ export function registerAssignmentTools(
         kjkey: z.string(),
         courseTitle: z.string().optional(),
         week: z.number().int().optional(),
-        assignments: z.array(z.object(assignmentSummarySchema))
+        assignments: z.array(z.object(assignmentSummarySchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, kjkey, week }, extra) => {
@@ -190,14 +193,21 @@ export function registerAssignmentTools(
         termLabel: resolvedCourse.termLabel
       });
 
+      const viewUrl = await publishView(buildAssignmentListMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatAssignmentListText(result)
+            text: viewUrl
+              ? `${formatAssignmentListText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatAssignmentListText(result)
           }
         ],
-        structuredContent: result as AssignmentListResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as AssignmentListResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );
@@ -227,7 +237,8 @@ export function registerAssignmentTools(
         bodyText: z.string(),
         contentSeq: z.string().optional(),
         attachments: z.array(z.object(attachmentSchema)),
-        submission: z.object(assignmentSubmissionSchema).optional()
+        submission: z.object(assignmentSubmissionSchema).optional(),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, kjkey, rtSeq }, extra) => {
@@ -256,14 +267,21 @@ export function registerAssignmentTools(
         termLabel: resolvedCourse.termLabel
       });
 
+      const viewUrl = await publishView(buildAssignmentDetailMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatAssignmentDetailText(result)
+            text: viewUrl
+              ? `${formatAssignmentDetailText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatAssignmentDetailText(result)
           }
         ],
-        structuredContent: result as AssignmentDetailResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as AssignmentDetailResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );

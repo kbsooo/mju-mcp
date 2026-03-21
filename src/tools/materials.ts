@@ -20,6 +20,8 @@ import {
   resolveCourseReference
 } from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
+import { buildMaterialListMessages, buildMaterialDetailMessages } from "../a2ui/builders/materials.js";
+import { publishView } from "../a2ui/publish.js";
 
 const attachmentSchema = {
   name: z.string(),
@@ -132,7 +134,8 @@ export function registerMaterialTools(
         kjkey: z.string(),
         courseTitle: z.string().optional(),
         week: z.number().int().optional(),
-        materials: z.array(z.object(materialSummarySchema))
+        materials: z.array(z.object(materialSummarySchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, kjkey, week }, extra) => {
@@ -161,14 +164,21 @@ export function registerMaterialTools(
         termLabel: resolvedCourse.termLabel
       });
 
+      const viewUrl = await publishView(buildMaterialListMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatMaterialListText(result)
+            text: viewUrl
+              ? `${formatMaterialListText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatMaterialListText(result)
           }
         ],
-        structuredContent: result as MaterialListResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as MaterialListResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );
@@ -195,7 +205,8 @@ export function registerMaterialTools(
         bodyText: z.string(),
         contentSeq: z.string().optional(),
         attachments: z.array(z.object(attachmentSchema)),
-        qnaTarget: z.object(qnaTargetSchema).optional()
+        qnaTarget: z.object(qnaTargetSchema).optional(),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, kjkey, articleId }, extra) => {
@@ -224,14 +235,21 @@ export function registerMaterialTools(
         termLabel: resolvedCourse.termLabel
       });
 
+      const viewUrl = await publishView(buildMaterialDetailMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatMaterialDetailText(result)
+            text: viewUrl
+              ? `${formatMaterialDetailText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatMaterialDetailText(result)
           }
         ],
-        structuredContent: result as MaterialDetailResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as MaterialDetailResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );

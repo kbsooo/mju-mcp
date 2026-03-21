@@ -4,6 +4,8 @@ import * as z from "zod/v4";
 import type { AppContext } from "../mcp/app-context.js";
 import { getUcheckCourseAttendance } from "../ucheck/services.js";
 import { requireCredentials } from "./credentials.js";
+import { buildSingleAttendanceMessages } from "../a2ui/builders/attendance.js";
+import { publishView } from "../a2ui/publish.js";
 
 const attendanceSummarySchema = {
   attendedCount: z.number().int(),
@@ -117,7 +119,8 @@ export function registerUcheckTools(
         summary: z.object(attendanceSummarySchema),
         totalSessions: z.number().int(),
         completedSessions: z.number().int(),
-        sessions: z.array(z.object(attendanceSessionSchema))
+        sessions: z.array(z.object(attendanceSessionSchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, lectureNo, year, term }) => {
@@ -130,11 +133,15 @@ export function registerUcheckTools(
         ...(term !== undefined ? { term } : {})
       });
 
+      const viewUrl = await publishView(buildSingleAttendanceMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatAttendanceText(result)
+            text: viewUrl
+              ? `${formatAttendanceText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatAttendanceText(result)
           }
         ],
         structuredContent: {
@@ -145,7 +152,8 @@ export function registerUcheckTools(
           summary: result.summary,
           totalSessions: result.totalSessions,
           completedSessions: result.completedSessions,
-          sessions: result.sessions
+          sessions: result.sessions,
+          ...(viewUrl ? { viewUrl } : {})
         }
       };
     }

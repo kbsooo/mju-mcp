@@ -15,6 +15,8 @@ import {
   resolveCourseReference
 } from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
+import { buildNoticeListMessages, buildNoticeDetailMessages } from "../a2ui/builders/notices.js";
+import { publishView } from "../a2ui/publish.js";
 
 const attachmentSchema = {
   name: z.string(),
@@ -155,7 +157,8 @@ export function registerNoticeTools(
         start: z.number().int(),
         total: z.number().int(),
         totalPages: z.number().int(),
-        notices: z.array(z.object(noticeSummarySchema))
+        notices: z.array(z.object(noticeSummarySchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, kjkey, page, pageSize, search }, extra) => {
@@ -186,14 +189,21 @@ export function registerNoticeTools(
         termLabel: resolvedCourse.termLabel
       });
 
+      const viewUrl = await publishView(buildNoticeListMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatNoticeListText(result)
+            text: viewUrl
+              ? `${formatNoticeListText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatNoticeListText(result)
           }
         ],
-        structuredContent: result as NoticeListResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as NoticeListResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );
@@ -220,7 +230,8 @@ export function registerNoticeTools(
         bodyHtml: z.string(),
         bodyText: z.string(),
         contentSeq: z.string().optional(),
-        attachments: z.array(z.object(attachmentSchema))
+        attachments: z.array(z.object(attachmentSchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ course, kjkey, articleId }, extra) => {
@@ -249,14 +260,21 @@ export function registerNoticeTools(
         termLabel: resolvedCourse.termLabel
       });
 
+      const viewUrl = await publishView(buildNoticeDetailMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatNoticeDetailText(result)
+            text: viewUrl
+              ? `${formatNoticeDetailText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatNoticeDetailText(result)
           }
         ],
-        structuredContent: result as NoticeDetailResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as NoticeDetailResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );

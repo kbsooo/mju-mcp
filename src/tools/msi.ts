@@ -9,6 +9,13 @@ import {
 } from "../msi/services.js";
 import type { AppContext } from "../mcp/app-context.js";
 import { requireCredentials } from "./credentials.js";
+import {
+  buildCurrentGradesMessages,
+  buildTimetableMessages,
+  buildGradeHistoryMessages,
+  buildGraduationMessages
+} from "../a2ui/builders/msi.js";
+import { publishView } from "../a2ui/publish.js";
 
 const labeledValueSchema = {
   label: z.string(),
@@ -222,7 +229,8 @@ export function registerMsiTools(
         termCode: z.string(),
         termLabel: z.string(),
         termOptions: z.array(z.object(timetableTermOptionSchema)),
-        entries: z.array(z.object(timetableEntrySchema))
+        entries: z.array(z.object(timetableEntrySchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ year, termCode }) => {
@@ -233,11 +241,15 @@ export function registerMsiTools(
         ...(termCode !== undefined ? { termCode } : {})
       });
 
+      const viewUrl = await publishView(buildTimetableMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatTimetableText(result)
+            text: viewUrl
+              ? `${formatTimetableText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatTimetableText(result)
           }
         ],
         structuredContent: toStructuredContent({
@@ -245,7 +257,8 @@ export function registerMsiTools(
           termCode: result.termCode,
           termLabel: result.termLabel,
           termOptions: result.termOptions,
-          entries: result.entries
+          entries: result.entries,
+          ...(viewUrl ? { viewUrl } : {})
         })
       };
     }
@@ -261,7 +274,8 @@ export function registerMsiTools(
       outputSchema: {
         year: z.number().int().optional(),
         termLabel: z.string().optional(),
-        items: z.array(z.object(currentGradeItemSchema))
+        items: z.array(z.object(currentGradeItemSchema)),
+        viewUrl: z.string().optional()
       }
     },
     async () => {
@@ -269,17 +283,22 @@ export function registerMsiTools(
       const client = context.createMsiClient();
       const result = await getMsiCurrentTermGrades(client, credentials);
 
+      const viewUrl = await publishView(buildCurrentGradesMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatCurrentGradesText(result)
+            text: viewUrl
+              ? `${formatCurrentGradesText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatCurrentGradesText(result)
           }
         ],
         structuredContent: toStructuredContent({
           ...(result.year !== undefined ? { year: result.year } : {}),
           ...(result.termLabel ? { termLabel: result.termLabel } : {}),
-          items: result.items
+          items: result.items,
+          ...(viewUrl ? { viewUrl } : {})
         })
       };
     }
@@ -297,7 +316,8 @@ export function registerMsiTools(
         overview: z.array(z.object(labeledValueSchema)),
         creditsByCategory: z.array(z.object(creditBucketSchema)),
         termRecords: z.array(z.object(gradeHistoryTermRecordSchema)),
-        allRows: z.array(z.object(gradeHistoryRowSchema))
+        allRows: z.array(z.object(gradeHistoryRowSchema)),
+        viewUrl: z.string().optional()
       }
     },
     async () => {
@@ -305,11 +325,15 @@ export function registerMsiTools(
       const client = context.createMsiClient();
       const result = await getMsiGradeHistory(client, credentials);
 
+      const viewUrl = await publishView(buildGradeHistoryMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatGradeHistoryText(result)
+            text: viewUrl
+              ? `${formatGradeHistoryText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatGradeHistoryText(result)
           }
         ],
         structuredContent: toStructuredContent({
@@ -317,7 +341,8 @@ export function registerMsiTools(
           overview: toLabeledValues(result.overview),
           creditsByCategory: result.creditsByCategory,
           termRecords: result.termRecords,
-          allRows: result.allRows
+          allRows: result.allRows,
+          ...(viewUrl ? { viewUrl } : {})
         })
       };
     }
@@ -335,7 +360,8 @@ export function registerMsiTools(
         earnedCredits: z.array(z.object(graduationCreditSchema)),
         requiredCredits: z.array(z.object(graduationCreditSchema)),
         creditGaps: z.array(z.object(graduationGapSchema)),
-        notes: z.array(z.string())
+        notes: z.array(z.string()),
+        viewUrl: z.string().optional()
       }
     },
     async () => {
@@ -343,11 +369,15 @@ export function registerMsiTools(
       const client = context.createMsiClient();
       const result = await getMsiGraduationRequirements(client, credentials);
 
+      const viewUrl = await publishView(buildGraduationMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatGraduationRequirementsText(result)
+            text: viewUrl
+              ? `${formatGraduationRequirementsText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatGraduationRequirementsText(result)
           }
         ],
         structuredContent: toStructuredContent({
@@ -355,7 +385,8 @@ export function registerMsiTools(
           earnedCredits: result.earnedCredits,
           requiredCredits: result.requiredCredits,
           creditGaps: result.creditGaps,
-          notes: result.notes
+          notes: result.notes,
+          ...(viewUrl ? { viewUrl } : {})
         })
       };
     }

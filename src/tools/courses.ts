@@ -7,6 +7,8 @@ import type { ListCoursesOptions } from "../lms/courses.js";
 import type { CourseListResult } from "../lms/types.js";
 import { rememberCourseContext } from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
+import { buildCoursesMessages } from "../a2ui/builders/courses.js";
+import { publishView } from "../a2ui/publish.js";
 
 const courseTermSchema = {
   order: z.number(),
@@ -83,7 +85,8 @@ export function registerCourseTools(
         }),
         availableTerms: z.array(z.object(courseTermSchema)),
         selectedTerms: z.array(z.object(courseTermSchema)),
-        courses: z.array(z.object(courseSchema))
+        courses: z.array(z.object(courseSchema)),
+        viewUrl: z.string().optional()
       }
     },
     async ({ year, term, search, allTerms }, extra) => {
@@ -110,14 +113,21 @@ export function registerCourseTools(
         });
       }
 
+      const viewUrl = await publishView(buildCoursesMessages(result));
+
       return {
         content: [
           {
             type: "text",
-            text: formatCourseListText(result)
+            text: viewUrl
+              ? `${formatCourseListText(result)}\n\n🔗 뷰어: ${viewUrl}`
+              : formatCourseListText(result)
           }
         ],
-        structuredContent: result as CourseListResult & Record<string, unknown>
+        structuredContent: {
+          ...(result as CourseListResult & Record<string, unknown>),
+          ...(viewUrl ? { viewUrl } : {})
+        }
       };
     }
   );
