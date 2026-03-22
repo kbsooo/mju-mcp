@@ -18,6 +18,8 @@ import {
   type ToolSessionExtra
 } from "./course-resolver.js";
 import { requireCredentials } from "./credentials.js";
+import { buildAggregateAssignmentMessages } from "../a2ui/builders/assignments.js";
+import { publishView } from "../a2ui/publish.js";
 
 const DEFAULT_DUE_DAYS = 7;
 const NOTICE_PAGE_SIZE = 50;
@@ -811,18 +813,21 @@ export function registerAggregateTools(
         scope.courses
       );
       rememberSingleScope(context, extra, scope);
+      const viewUrl = await publishView(buildAggregateAssignmentMessages(assignments, '미제출 과제'));
+      const text = formatUnsubmittedAssignmentsText(assignments);
 
       return {
         content: [
           {
             type: "text",
-            text: formatUnsubmittedAssignmentsText(assignments)
+            text: viewUrl ? `${text}\n\n🔗 뷰어: ${viewUrl}` : text
           }
         ],
         structuredContent: {
           scope: scope.mode,
           count: assignments.length,
-          assignments
+          assignments,
+          ...(viewUrl ? { viewUrl } : {})
         }
       };
     }
@@ -874,12 +879,14 @@ export function registerAggregateTools(
         includeSubmitted: effectiveIncludeSubmitted
       });
       rememberSingleScope(context, extra, scope);
+      const viewUrl = await publishView(buildAggregateAssignmentMessages(assignments, '마감 임박 과제'));
+      const text = formatDueAssignmentsText(assignments, effectiveDays);
 
       return {
         content: [
           {
             type: "text",
-            text: formatDueAssignmentsText(assignments, effectiveDays)
+            text: viewUrl ? `${text}\n\n🔗 뷰어: ${viewUrl}` : text
           }
         ],
         structuredContent: {
@@ -887,7 +894,8 @@ export function registerAggregateTools(
           days: effectiveDays,
           includeSubmitted: effectiveIncludeSubmitted,
           count: assignments.length,
-          assignments
+          assignments,
+          ...(viewUrl ? { viewUrl } : {})
         }
       };
     }

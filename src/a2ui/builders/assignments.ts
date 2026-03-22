@@ -2,6 +2,52 @@ import type { AssignmentListResult, AssignmentDetailResult, AssignmentSummary } 
 import { comp, buildMessages } from '../publish.js';
 import type { A2UiMessage } from '../types.js';
 
+interface AggregateAssignment {
+  courseTitle?: string;
+  title: string;
+  weekLabel?: string;
+  statusLabel?: string;
+  statusText?: string;
+  dueAt?: string;
+  hoursUntilDue?: number;
+  isSubmitted: boolean;
+}
+
+export function buildAggregateAssignmentMessages(
+  assignments: AggregateAssignment[],
+  heading = '미제출 과제'
+): A2UiMessage[] {
+  if (assignments.length === 0) {
+    return buildMessages('view', 'root', [
+      comp.column('root', ['title']),
+      comp.text('title', `${heading} — 없음`, 'h1'),
+    ]);
+  }
+
+  const itemIds = assignments.map((_, i) => `item-${i}`);
+  const components = [
+    comp.column('root', ['title', 'list']),
+    comp.text('title', `${heading} ${assignments.length}건`, 'h1'),
+    comp.list('list', itemIds),
+  ];
+
+  assignments.forEach((a, i) => {
+    const hours = a.hoursUntilDue;
+    const isUrgent = hours !== undefined && hours <= 24;
+    const emoji = a.isSubmitted ? '🟢'
+      : (a.statusLabel ?? a.statusText ?? '').match(/만료|expired/i) ? '🔴'
+      : isUrgent ? '🔴'
+      : '🟠';
+    const course = a.courseTitle ? `[${a.courseTitle}] ` : '';
+    const status = a.dueAt
+      ? (a.statusText ?? a.dueAt)
+      : (a.statusText ?? a.statusLabel ?? (a.isSubmitted ? '제출완료' : '미제출'));
+    components.push(comp.text(`item-${i}`, `${emoji} ${course}${a.title}  ${status}`));
+  });
+
+  return buildMessages('view', 'root', components);
+}
+
 function assignmentEmoji(a: AssignmentSummary): string {
   if (a.isSubmitted) return '🟢';
   // Check if statusLabel suggests it's expired/missed
