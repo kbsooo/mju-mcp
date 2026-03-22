@@ -12,7 +12,6 @@ import { registerMsiTools } from "./msi.js";
 import { registerNoticeTools } from "./notices.js";
 import { registerOnlineTools } from "./online.js";
 import { registerUcheckTools } from "./ucheck.js";
-import { registerViewTools } from "./view.js";
 
 export function registerMjuLmsTools(
   server: McpServer,
@@ -29,5 +28,4 @@ export function registerMjuLmsTools(
   registerNoticeTools(server, context);
   registerOnlineTools(server, context);
   registerUcheckTools(server, context);
-  registerViewTools(server);
 }
