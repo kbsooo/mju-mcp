@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
       addRandomSuffix: false,
     });
 
-    const viewerUrl = `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/view/${id}`;
+    const host = req.headers.get("host") ?? "";
+    const proto = host.startsWith("localhost") ? "http" : "https";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${proto}://${host}`;
+    const viewerUrl = `${baseUrl}/view/${id}`;
 
     return NextResponse.json({ id, url: viewerUrl, blobUrl: blob.url });
   } catch (err) {
